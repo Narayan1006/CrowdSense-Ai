@@ -9,7 +9,21 @@ export function useCrowdData() {
 
   useEffect(() => {
     const unsubscribe = subscribeToCrowdData(data => {
-      setCrowdData(data);
+      // Simulate predictions based on current level
+      const dataWithPredictions = {};
+      for (const [key, value] of Object.entries(data)) {
+        let predictedLevel = value.level;
+        if (value.level === 'medium') predictedLevel = 'high';
+        else if (value.level === 'high') predictedLevel = 'high';
+        else if (value.level === 'low') predictedLevel = 'low';
+
+        dataWithPredictions[key] = {
+          ...value,
+          prediction: predictedLevel,
+        };
+      }
+
+      setCrowdData(dataWithPredictions);
       setIsLoading(false);
       setLastUpdated(new Date());
     });

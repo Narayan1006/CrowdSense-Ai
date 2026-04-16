@@ -13,7 +13,7 @@ const QUICK_QUERIES = [
   { label: '🚇 How to Reach?', query: 'How do I reach the stadium by metro or bus?' },
 ];
 
-export default function ChatPanel({ crowdData }) {
+export default function ChatPanel({ crowdData, userData }) {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -53,7 +53,7 @@ export default function ChatPanel({ crowdData }) {
     setIsLoading(true);
 
     try {
-      const response = await sendMessage(text.trim(), chatHistory, crowdData);
+      const response = await sendMessage(text.trim(), chatHistory, crowdData, userData);
       const aiMsg = {
         id: Date.now() + 1,
         role: 'model',
@@ -181,10 +181,9 @@ export default function ChatPanel({ crowdData }) {
         {isLoading && (
           <div className="message-wrapper ai">
             <div className="msg-avatar">🤖</div>
-            <div className="message-bubble ai typing">
-              <span className="dot"></span>
-              <span className="dot"></span>
-              <span className="dot"></span>
+            <div className="message-bubble ai loading-bubble">
+              <span className="spinner"></span>
+              Analyzing crowd data...
             </div>
           </div>
         )}
@@ -193,6 +192,13 @@ export default function ChatPanel({ crowdData }) {
 
       {/* Quick Queries */}
       <div className="quick-queries">
+        <button
+          className="quick-btn exit-btn"
+          onClick={() => sendMsg('Best Exit Now')}
+          disabled={isLoading}
+        >
+          🏃‍♂️ Best Exit Now
+        </button>
         {QUICK_QUERIES.map((q, i) => (
           <button
             key={i}

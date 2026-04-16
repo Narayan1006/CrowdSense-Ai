@@ -8,17 +8,21 @@ const LEVEL_CONFIG = {
   unknown: { color: '#6b7280', bg: 'rgba(107, 114, 128, 0.12)', border: 'rgba(107, 114, 128, 0.3)', label: '–', icon: '⚪' },
 };
 
-function CrowdPill({ name, level, shortName }) {
+function CrowdPill({ name, level, shortName, prediction }) {
   const cfg = LEVEL_CONFIG[level] || LEVEL_CONFIG.unknown;
+  const predCfg = LEVEL_CONFIG[prediction] || null;
   return (
     <div
       className="crowd-pill"
       style={{ background: cfg.bg, borderColor: cfg.border }}
-      title={`${name}: ${cfg.label}`}
+      title={`${name}: Current: ${cfg.label}${predCfg ? ` | Predicted: ${predCfg.label}` : ''}`}
     >
       <span className="pill-dot" style={{ background: cfg.color }} />
       <span className="pill-name">{shortName || name}</span>
       <span className="pill-level" style={{ color: cfg.color }}>{cfg.label}</span>
+      {predCfg && (
+        <span className="pill-pred">🔮 {predCfg.label}</span>
+      )}
     </div>
   );
 }
@@ -87,7 +91,7 @@ export default function CrowdStatus({ crowdData, lastUpdated, isLoading }) {
           <span className="section-label">🚪 Gates</span>
           <div className="pills-row">
             {gates.map(g => (
-              <CrowdPill key={g.id} name={g.name} level={g.level} shortName={g.name} />
+              <CrowdPill key={g.id} name={g.name} level={g.level} prediction={g.prediction} shortName={g.name} />
             ))}
           </div>
         </div>
@@ -96,7 +100,7 @@ export default function CrowdStatus({ crowdData, lastUpdated, isLoading }) {
           <span className="section-label">🍕 Food Stalls</span>
           <div className="pills-row">
             {foods.map(f => (
-              <CrowdPill key={f.id} name={f.name} level={f.level}
+              <CrowdPill key={f.id} name={f.name} level={f.level} prediction={f.prediction}
                 shortName={f.name.split(' ').slice(0, 2).join(' ')} />
             ))}
           </div>
@@ -106,7 +110,7 @@ export default function CrowdStatus({ crowdData, lastUpdated, isLoading }) {
           <span className="section-label">🚻 Washrooms</span>
           <div className="pills-row">
             {washrooms.map(w => (
-              <CrowdPill key={w.id} name={w.name} level={w.level}
+              <CrowdPill key={w.id} name={w.name} level={w.level} prediction={w.prediction}
                 shortName={w.name.replace('Washroom Block ', 'WC ')} />
             ))}
           </div>

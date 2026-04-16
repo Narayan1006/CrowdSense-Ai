@@ -92,7 +92,25 @@ export default function UserApp() {
         </div>
       )}
 
-      {/* ─── Crowd Status Bar ─── */}
+      {/* ─── Live Status Bar ─── */}
+      <div className="live-status-bar">
+        <div className="status-marquee">
+          {Object.values(crowdData)
+            .filter(d => d.type === 'gate')
+            .map(g => {
+              const icon = g.level === 'low' ? '🟢' : g.level === 'medium' ? '🟡' : '🔴';
+              const name = g.name.replace('Gate ', 'G').split(' ')[0]; // G1, G2, etc.
+              const label = g.level.charAt(0).toUpperCase() + g.level.slice(1);
+              return <span key={g.id} className="status-ticker-item">{icon} {name} {label}</span>;
+            })
+          }
+        </div>
+        <div className="status-timestamp">
+          {lastUpdated ? `Last updated: ${lastUpdated.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : 'Waiting for data...'}
+        </div>
+      </div>
+
+      {/* ─── Crowd Status Main Cards ─── */}
       <div className="crowd-status-container">
         <CrowdStatus crowdData={crowdData} lastUpdated={lastUpdated} isLoading={isLoading} />
       </div>
@@ -105,7 +123,7 @@ export default function UserApp() {
       {/* ─── Main Dashboard ─── */}
       <main className="dashboard">
         <div className="panel-left">
-          <ChatPanel crowdData={crowdData} />
+          <ChatPanel crowdData={crowdData} userData={user} />
         </div>
         <div className="panel-right">
           <StadiumMap crowdData={crowdData} />

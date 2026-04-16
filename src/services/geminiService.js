@@ -14,76 +14,88 @@ if (hasGemini) {
   model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 }
 
-function buildSystemPrompt(crowdData) {
+function buildSystemPrompt(crowdData, userData) {
   const crowdSummary = crowdData
     ? Object.entries(crowdData)
-        .map(([key, val]) => `  - ${val.name}: ${val.level?.toUpperCase() || 'UNKNOWN'}`)
+        .map(([key, val]) => `  - ${val.name}: ${val.level?.toUpperCase() || 'UNKNOWN'} (Prediction: ${val.prediction?.toUpperCase() || 'UNKNOWN'})`)
         .join('\n')
     : '  - Data unavailable (using estimates)';
 
-  return `You are StadiumAI — a helpful AI assistant for visitors at Narendra Modi Stadium (Sardar Patel Stadium), Motera, Ahmedabad. The stadium has a capacity of 132,000 and is the world's largest cricket stadium.
+  const userContext = userData 
+    ? `\nUSER CONTEXT:\n- Name: ${userData.name || 'Visitor'}\n- Block: ${userData.block || 'Unknown'}\n- Recommended Gate: ${userData.gate || 'Unknown'}\n*Personalize your reasoning using this location data if relevant.*`
+    : '';
+
+  return `You are StadiumAI — an AI assistant for SenseCrowd AI at Narendra Modi Stadium.
+The stadium has a capacity of 132,000. Priority is user safety and real-time efficiency.
 
 STADIUM LAYOUT:
-- Gates: Gate 1 (North Main), Gate 2 (Northeast/Club House), Gate 3 (Southeast), Gate 4 (South), Gate 5 (Southwest), Gate 6 (Northwest/VIP)
-- Seating Blocks: A (North Premium), B (NE Upper), C (Club House), D (East Lower), E (SE), F (South), G (South General), H (West)
-- Food Stalls: Chai & Snacks Corner (N), Gujarati Bites (NE), Fast Food Hub (E), South Zone Canteen (S), West Refreshment Bar (W), VIP Lounge Café (NW), NE Stall, Ice Cream & Desserts
+- Gates: Gate 1 (North Main), Gate 2 (Northeast), Gate 3 (Southeast), Gate 4 (South), Gate 5 (Southwest), Gate 6 (Northwest/VIP)
+- Blocks: A (North Premium), B (NE Upper), C (Club House), D (East Lower), E (SE), F (South), G (South General), H (West)
+- Food Stalls: Chai & Snacks Corner (N), Gujarati Bites (NE), Fast Food Hub (E), South Zone Canteen (S), West Refreshment Bar (W), VIP Lounge Café (NW)
 - Washrooms: Near each gate (NW, NE, SE, South, SW, VIP)
-- First Aid: Center of the stadium
-- Security Control Room: Near Gate 1
-- Lost & Found: Gate 1 Information Desk
+- Contacts: Medical = 1077, Security = 100, Police = 112
 
-REAL-TIME CROWD LEVELS (as of now):
+REAL-TIME CROWD LEVELS:
 ${crowdSummary}
+${userContext}
 
-YOUR BEHAVIOR:
-1. Give SHORT, ACTIONABLE answers (2-4 sentences max)
-2. Always recommend the LEAST CROWDED option when relevant
-3. Be friendly and reassuring
-4. For emergencies, immediately provide help point info and emergency numbers
-5. Mention specific gate/stall/block names
-6. If asked in Hindi, respond in Hindi
-7. Emergency contacts: Medical = 1077, Security = 100, Police = 112
+RESPONSE STYLE RULES:
+1. Be concise and practical (no long paragraphs).
+2. Always give a decision, not just information.
+3. Prioritize user safety and convenience (1. LOW crowd, 2. Closest distance).
+4. For emergencies, give immediate actionable steps and contact numbers.
+5. NO vague answers, NO "I think" or "maybe".
 
-Always prioritize visitor safety and convenience.`;
+MANDATORY RESPONSE FORMAT:
+You MUST respond strictly in the following format for EVERY query:
+
+Recommendation: [Best action for the user]
+
+Reason: [Why this is recommended based on crowd + distance + context]
+
+Prediction: [Expected crowd trend in next 10 minutes]
+
+Confidence: [Give a percentage between 70–95%]
+`;
 }
 
-// Intelligent mock responses for demo mode
+// Intelligent mock responses for demo mode following strict format
 const MOCK_QA = [
   {
+    keywords: ['exit now', 'best exit', 'leave'],
+    response: 'Recommendation: Exit via Gate 5 (Southwest).\n\nReason: Gate 5 currently has LOW crowd, while other gates like Gate 2 and Gate 4 are highly congested with outgoing traffic.\n\nPrediction: Expected to remain LOW for the next 10 minutes as crowd surge moves East.\n\nConfidence: 94%',
+  },
+  {
     keywords: ['gate', 'enter', 'entry', 'which gate', 'come in'],
-    response: '🚪 Based on current crowd levels, **Gate 5 (Southwest)** has the lowest crowd — ideal for quick entry! If you\'re in Block A or B, use **Gate 1 (North)**. Avoid Gate 2 which is currently busy. Tip: Metro to Motera Station gets you closest to Gate 1.',
+    response: 'Recommendation: Use Gate 5 (Southwest).\n\nReason: It currently has LOW crowd and is less congested compared to Gate 2, ensuring faster entry. If you are seated in Block A or B, Gate 1 is also acceptable.\n\nPrediction: Crowd at Gate 5 is expected to remain LOW for the next 10 minutes.\n\nConfidence: 91%',
   },
   {
     keywords: ['seat', 'block', 'where is my', 'my seat', 'seating'],
-    response: '🎫 Your seating block determines your gate: Blocks A-B → Gate 1 or 6, Blocks C-D → Gate 2, Block E → Gate 3, Blocks F-G → Gate 4, Block H → Gate 5. Check your ticket for the block letter and row number. Show your ticket QR at entry!',
+    response: 'Recommendation: Check your ticket for Block letter, then proceed to the nearest open gate.\n\nReason: Block A-B maps to Gate 1, C-D to Gate 2, E to Gate 3, F-G to Gate 4, H to Gate 5. Using your designated gate minimizes walking distance inside.\n\nPrediction: Inner concourse crowd expected to surge briefly as match starts.\n\nConfidence: 95%',
   },
   {
     keywords: ['washroom', 'toilet', 'restroom', 'bathroom', 'loo'],
-    response: '🚻 Nearest washrooms are located right behind each gate entry. The **North Zone washroom** (near Gate 1) is currently less crowded. **Pro tip:** Washrooms near VIP Gate 6 are premium facilities and often less busy. Follow the blue signs inside!',
+    response: 'Recommendation: Use the washrooms near VIP Gate 6 or Gate 5.\n\nReason: These facilities currently show LOW usage. Avoid the North Zone washroom near Gate 1 which is temporarily experiencing HIGH traffic.\n\nPrediction: Priority washrooms will remain accessible with LOW wait times.\n\nConfidence: 89%',
   },
   {
     keywords: ['food', 'eat', 'hungry', 'stall', 'canteen', 'snack', 'drink'],
-    response: '🍕 **Best options right now:**\n- **West Refreshment Bar** (Gate 5 area) — Low crowd, fresh juices & snacks\n- **Chai & Snacks Corner** (Gate 1) — Masala Chai ₹20, Samosa ₹15\n- **Gujarati Bites** (Gate 2) — Dhokla & Fafda!\nAvoid South Zone Canteen — it\'s busy. Enjoy your food! 🙂',
+    response: 'Recommendation: Visit West Refreshment Bar near Gate 5.\n\nReason: Shortest queue recorded right now with fresh supplies available. Avoid South Zone Canteen due to HIGH wait times.\n\nPrediction: Medium congestion expected in West Zone during the next over break.\n\nConfidence: 92%',
   },
   {
     keywords: ['crowd', 'crowded', 'busy', 'rush', 'less crowd', 'avoid'],
-    response: '📊 **Current crowd snapshot:**\n- 🟢 Gate 5 (SW) — LOW crowd\n- 🟢 Gate 6 (NW) — LOW crowd\n- 🟡 Gate 1 (N) — MEDIUM crowd\n- 🔴 Gate 2 (NE) — HIGH crowd\n\nFor least crowds: Head to the **West or Southwest zone**. Avoid Gate 2 and 3 currently.',
+    response: 'Recommendation: Head towards the West or Southwest zones (Gate 5 / Gate 6).\n\nReason: Real-time sensors indicate LOW crowds in these areas. Gate 2 (Northeast) is currently experiencing HIGH congestion and should be avoided.\n\nPrediction: Gate 2 will remain HIGH, Gate 5 will remain LOW.\n\nConfidence: 93%',
   },
   {
     keywords: ['parking', 'park', 'car'],
-    response: '🚗 Parking zones: P1 (North, near Gate 1), P2 (East, near Gate 2-3), P4 (South, near Gate 4), P5 (West, near Gate 5). **P5 West Parking** has more space currently. Tip: Use Metro or BRTS to avoid parking hassle — Motera Metro Station is just 500m from Gate 1!',
+    response: 'Recommendation: Park at P5 (West Parking) near Gate 5.\n\nReason: Sensor data shows maximum available slots in P5. P2 (East) is currently full.\n\nPrediction: P5 will reach MEDIUM capacity in 15 minutes.\n\nConfidence: 88%',
   },
   {
     keywords: ['metro', 'bus', 'transport', 'how to reach', 'how do i get'],
-    response: '🚇 Best ways to reach the stadium:\n- **Metro:** Aqua Line → Motera Station → 500m walk/auto to Gate 1\n- **BRTS:** Chandkheda Bus Stop → 500m walk\n- **Auto/Cab:** Drop-off at designated zones near each gate\n- **Avoid:** Driving yourself on match day — heavy traffic!',
+    response: 'Recommendation: Take the Aqua Line Metro to Motera Station.\n\nReason: The walking path from the metro to Gate 1 is currently showing LOW pedestrian traffic, making it the fastest transport option over driving.\n\nPrediction: Pedestrian route will remain clear for the next 10 minutes.\n\nConfidence: 95%',
   },
   {
-    keywords: ['lost', 'help', 'emergency', 'missing', 'danger'],
-    response: '🆘 **EMERGENCY CONTACTS:**\n- 🏥 Medical Emergency: **1077** (on-site First Aid Center)\n- 👮 Security: **100** (Control Room near Gate 1)\n- 🔍 Lost & Found: Gate 1 Information Desk\n- 🚨 Police: **112**\n\nPlease go to the nearest stadium staff member (yellow vest) for immediate help!',
-  },
-  {
-    keywords: ['medical', 'doctor', 'ambulance', 'faint', 'injured', 'hurt'],
-    response: '🏥 **Medical Emergency:** Call **1077** immediately. The main First Aid Center is at the stadium center — follow the red cross signs. Stadium medical staff in orange vests are stationed near all gates. Do NOT move an injured person — call for help and stay with them.',
+    keywords: ['medical', 'doctor', 'ambulance', 'faint', 'injured', 'hurt', 'lost', 'help', 'emergency', 'missing', 'danger'],
+    response: 'Recommendation: Call 1077 or approach staff in orange/yellow vests immediately.\n\nReason: First Aid Center is located at the center field, and medical staff are stationed at all gates. Do not move an injured person.\n\nPrediction: Emergency response team can reach any gate within 3 minutes.\n\nConfidence: 100%',
   },
 ];
 
@@ -94,10 +106,10 @@ function getMockResponse(message) {
       return qa.response;
     }
   }
-  return `👋 Thanks for your question! I'm StadiumAI, your companion at Narendra Modi Stadium. I can help you with:\n\n- 🚪 **Gate entry** — which gate to use\n- 🎫 **Your seat** — finding your block\n- 🍕 **Food stalls** — nearest options & menus\n- 🚻 **Washrooms** — closest to you\n- 📊 **Crowd levels** — where it's least busy\n- 🚗 **Parking & transport** — getting here & back\n- 🆘 **Emergency help** — medical, security, lost & found\n\nTry asking me something specific! 😊`;
+  return `Recommendation: Please ask a specific question regarding navigation, crowd levels, or facilities.\n\nReason: I am currently optimized to provide actionable intelligence on gates, food stalls, washrooms, and emergency help based on real-time stadium data.\n\nPrediction: State remains stable.\n\nConfidence: 99%`;
 }
 
-export async function sendMessage(message, chatHistory, crowdData) {
+export async function sendMessage(message, chatHistory, crowdData, userData = null) {
   // Demo mode: use intelligent mock responses
   if (!hasGemini) {
     await new Promise(r => setTimeout(r, 800 + Math.random() * 600)); // simulate latency
@@ -105,7 +117,7 @@ export async function sendMessage(message, chatHistory, crowdData) {
   }
 
   try {
-    const systemPrompt = buildSystemPrompt(crowdData);
+    const systemPrompt = buildSystemPrompt(crowdData, userData);
     const fullHistory = chatHistory.map(msg => ({
       role: msg.role,
       parts: [{ text: msg.content }],
@@ -114,7 +126,7 @@ export async function sendMessage(message, chatHistory, crowdData) {
     const chat = model.startChat({
       history: [
         { role: 'user', parts: [{ text: systemPrompt }] },
-        { role: 'model', parts: [{ text: 'Understood. I am StadiumAI, ready to assist visitors at Narendra Modi Stadium with navigation, crowd updates, food stalls, and emergency help.' }] },
+        { role: 'model', parts: [{ text: 'Recommendation: Systems initialized.\n\nReason: I have loaded stadium layouts, real-time crowd density, and alert procedures to assist visitors effectively.\n\nPrediction: Prepared for queries.\n\nConfidence: 100%' }] },
         ...fullHistory,
       ],
       generationConfig: {

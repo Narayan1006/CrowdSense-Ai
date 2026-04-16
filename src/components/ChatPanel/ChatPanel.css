@@ -223,6 +223,31 @@
   40% { transform: translateY(-6px); opacity: 1; }
 }
 
+/* Analyzing indicator */
+.loading-bubble {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  font-family: monospace;
+  font-size: 13px;
+  color: #93c5fd !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(147, 197, 253, 0.3);
+  border-top-color: #93c5fd;
+  border-radius: 50%;
+  animation: loadSpin 0.8s linear infinite;
+}
+
+@keyframes loadSpin {
+  to { transform: rotate(360deg); }
+}
+
 /* Quick Queries */
 .quick-queries {
   display: flex;
@@ -255,6 +280,19 @@
 }
 
 .quick-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.exit-btn {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15));
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+}
+.exit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.25));
+  border-color: #10b981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
 
 /* Input area */
 .chat-input-area {
