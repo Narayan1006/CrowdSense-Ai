@@ -1,102 +1,93 @@
-# StadiumAI Companion 🏟️
+# SenseCrowd AI 🏟️ 
 
-> **AI-powered visitor companion for Narendra Modi Stadium, Ahmedabad**
+> **A real-time, AI-driven crowd intelligence and prediction platform for the Narendra Modi Stadium, Ahmedabad.**
 
-A full-stack React + Firebase + Gemini AI web application that helps stadium visitors navigate, avoid crowds, and get real-time assistance during events.
+SenseCrowd AI is a full-stack production-ready web application built to intelligently manage large-scale crowd logistics. It uses Firebase for real-time tracking and Google Gemini for dynamic, explainable predictive orchestration — splitting routing and control via a dual-interface architecture.
 
 ---
 
-## 🚀 Quick Start
+## ✨ Enterprise Features
 
-### 1. Install dependencies
+| Feature | Description |
+|---------|-------------|
+| 🤖 **Explainable AI** | Chatbot logic enforced to deliver *Recommendation, Reasoning, Prediction & Confidence* for maximum transparency. |
+| 🔮 **Traffic Prediction** | Client-side logical heuristics simulating real-time crowd momentum (e.g. Medium ➔ predicted High). |
+| 🛡️ **Role-Based Access (RBAC)** | Secure route guards separating standard Attendee access from the administrative command center. |
+| 🎫 **Smart Authentication** | Firebase Email/Password Auth for Admins | Mock ticket-verification lookup for Attendees. |
+| ☁️ **Firebase & Vercel Ready** | Configs built-in ( `firebase.json` ) for immediate SPA deployment and remote hosting routing. |
+| 🆘 **Emergency Mode** | Dedicated SOS triggers routing directly to central command instances. |
+| 🏃‍♂️ **Smart Evacuation** | "Best Exit Now" triggers optimized real-time calculations out of congested stadium zones. |
+
+---
+
+## 🏗️ Architecture Stack
+
+- **Frontend & Routing:** React 18 + React Router + Vite
+- **Cloud Intelligence:** Google Gemini 2.0 Flash
+- **Cloud Database:** Firebase Firestore (Real-time syncing)
+- **Authentication:** Firebase Auth
+- **Design System:** Glassmorphism UI (CSS Variables)
+
+---
+
+## 🚀 Local Development
+
+### 1. Install Dependencies
 ```bash
-cd "c:\Gen_AI\Projects\CrowdSense Ai\CrowdSense-Ai"
 npm install
 ```
 
-### 2. Start the dev server
+### 2. Environment Variables
+Create a `.env` file in the root based off `.env.example`:
+```env
+VITE_GEMINI_API_KEY=your_gemini_key
+VITE_FIREBASE_API_KEY=your_firebase_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project
+# ... add remaining standard Firebase configs
+```
+
+### 3. Launch Development Server
 ```bash
 npm run dev
 ```
+The application will boot at `http://localhost:3000`. 
+- **Attendee Login:** Use `TKT-001` or `TKT-002` (Demo bypass supported)
+- **Admin Login:** Proceed to `/admin` and login using Firebase registered credentials.
 
-The app opens at **http://localhost:3000** — fully functional with simulated crowd data, no API keys required!
-
----
-
-## 🔑 Adding API Keys (Optional — for full features)
-
-Copy `.env.example` to `.env` and fill in your keys:
-
-```bash
-copy .env.example .env
-```
-
-| Key | Where to get it | Feature unlocked |
-|-----|----------------|-----------------|
-| `VITE_GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) | Real Gemini AI responses |
-| `VITE_GOOGLE_MAPS_API_KEY` | [Google Cloud Console](https://console.cloud.google.com) | Live satellite map |
-| `VITE_FIREBASE_*` | [Firebase Console](https://console.firebase.google.com) | Real-time Firestore crowd data |
-
-> **Without keys:** App works in demo mode with intelligent mock AI responses, simulated crowd data, and an SVG stadium map.
+*(Note: Without `.env` keys, the app securely defaults to a local mock-mode retaining full UI functionality).*
 
 ---
 
-## ✨ Features
+## 🌍 Production Deployment (Firebase Hosting)
 
-| Feature | Status |
-|---------|--------|
-| 🤖 AI Chat (Gemini) | ✅ With fallback |
-| 🎙️ Voice Input (STT) | ✅ Web Speech API |
-| 🔊 Voice Output (TTS) | ✅ Web Speech API |
-| 🗺️ Stadium Map | ✅ SVG / Google Maps |
-| 📊 Real-time Crowd Data | ✅ Firebase / Simulated |
-| ✨ Smart Suggestions | ✅ AI-powered |
-| 🆘 Emergency Mode | ✅ All 3 categories |
-| 📱 Mobile Responsive | ✅ |
+The project handles all build routing dynamically. To deploy directly to your Firebase configuration:
 
----
+1. **Login via CLI:**
+   ```bash
+   npx firebase-tools login
+   ```
+2. **Build & Deploy:**
+   ```bash
+   npm run build
+   npx firebase-tools deploy --only hosting
+   ```
 
-## 🏗️ Tech Stack
-
-- **Frontend:** React 18 + Vite
-- **AI:** Google Gemini 1.5 Flash
-- **Database:** Firebase Firestore
-- **Maps:** Google Maps JavaScript API
-- **Voice:** Web Speech API (native browser)
-- **Styling:** Vanilla CSS with glassmorphism
+*(Requires the Firebase project specified in `.firebaserc` matching your Google IAM permissions).*
 
 ---
 
-## 📁 Project Structure
+## 📁 Core Directory Structure
 
-```
+```text
 src/
-├── components/
-│   ├── ChatPanel/       ← AI chat with voice
-│   ├── StadiumMap/      ← Interactive stadium map
-│   ├── CrowdStatus/     ← Real-time crowd indicators
-│   ├── EmergencyModal/  ← Emergency assistance
-│   └── SmartSuggestions/← AI recommendations
-├── services/
-│   ├── geminiService.js ← Gemini AI integration
-│   ├── firebaseService.js ← Crowd data management
-│   └── voiceService.js  ← Speech APIs
-├── data/
-│   └── stadiumData.js   ← Stadium layout & coordinates
-└── hooks/
-    └── useCrowdData.js  ← Real-time data hook
+├── components/          ← UI Components (ChatPanel, CrowdStatus, AlertBanner)
+├── context/             ← React Context Providers (AuthContext)
+├── hooks/               ← Reusable Logic (useCrowdData, useAlerts)
+├── pages/               ← Primary Views (LoginPage, UserApp, AdminDashboard)
+├── services/            ← External SDKs (firebaseService, geminiService)
+└── data/                ← Mock fallback databases and coordinate logic
 ```
-
----
-
-## 🎯 Demo Queries to Try
-
-- *"Which gate should I enter from?"*
-- *"Where is the nearest food stall?"*
-- *"Which area is least crowded right now?"*
-- *"How do I reach the stadium by metro?"*
-- *"Where is the washroom near Block C?"*
-- *"I need medical help"*
 
 ---
 
@@ -107,4 +98,6 @@ src/
 | 🏥 Medical (On-site) | 1077 |
 | 👮 Security | 100 |
 | 🚨 Police | 112 |
-| 🔍 Lost & Found | Gate 1 Info Desk |
+
+---
+*Built via Firebase & Gemini for efficient crowd density normalization.*
