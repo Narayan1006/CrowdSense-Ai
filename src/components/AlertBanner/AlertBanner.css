@@ -1,0 +1,42 @@
+.alert-banner-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 0 4px;
+}
+
+.alert-banner-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  border: 1px solid;
+  border-radius: 10px;
+  animation: abSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes abSlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ab-icon  { font-size: 15px; flex-shrink: 0; }
+.ab-label { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; white-space: nowrap; flex-shrink: 0; }
+.ab-msg   { flex: 1; font-size: 12px; color: #e2e8f0; font-weight: 500; }
+.ab-time  { font-size: 10px; color: #64748b; white-space: nowrap; flex-shrink: 0; }
+
+.ab-dismiss {
+  background: rgba(255,255,255,0.06);
+  border: none;
+  color: #64748b;
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  padding: 0;
+}
+.ab-dismiss:hover { background: rgba(239,68,68,0.15); color: #ef4444; }

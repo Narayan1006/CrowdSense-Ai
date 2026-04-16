@@ -1,0 +1,461 @@
+/* ============================================
+   Stadium Map Panel Styles
+   ============================================ */
+
+.stadium-map-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ─── Map Header ─── */
+.map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.map-header-left h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: var(--text-primary);
+}
+
+.map-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.demo-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #f59e0b;
+}
+
+.live-map-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #10b981;
+}
+
+/* ─── Map Content ─── */
+.map-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ─── Google Maps ─── */
+.google-map-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.google-map {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Map type toggle */
+.map-type-toggle {
+  display: flex;
+  gap: 4px;
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(10, 14, 26, 0.85);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 3px;
+  backdrop-filter: blur(12px);
+}
+
+.map-type-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.map-type-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.map-type-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.07);
+  color: var(--text-primary);
+}
+
+/* Map loading */
+.map-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  background: var(--card-bg);
+}
+
+.map-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(59,130,246,0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Map Info Card (Google Maps overlay) ─── */
+.map-info-card {
+  position: absolute;
+  bottom: 48px;
+  left: 12px;
+  right: 12px;
+  background: rgba(13, 21, 38, 0.96);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+  z-index: 20;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.map-info-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.map-info-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.map-info-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: var(--text-primary);
+}
+
+.map-info-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.info-close {
+  margin-left: auto;
+  background: rgba(255,255,255,0.06);
+  border: none;
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.info-close:hover {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
+}
+
+.map-info-body {
+  padding: 10px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.map-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-info-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.map-info-value {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+  max-width: 200px;
+}
+
+.map-info-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #ef4444;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: 4px;
+  transition: all 0.15s;
+}
+
+.map-info-phone:hover {
+  background: rgba(239,68,68,0.2);
+}
+
+/* Crowd badge */
+.crowd-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+/* Google Map Legend */
+.google-map-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  background: rgba(10, 14, 26, 0.88);
+  border-top: 1px solid rgba(255,255,255,0.07);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.gml-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.gml-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gml-sep {
+  color: rgba(255,255,255,0.15);
+  font-size: 14px;
+}
+
+/* ─── SVG Map ─── */
+.svg-map-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+.svg-map-label {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(245, 158, 11, 0.06);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.stadium-svg {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.map-marker {
+  transition: opacity 0.2s;
+}
+
+.map-marker:hover {
+  opacity: 0.85;
+}
+
+/* SVG Map Legend */
+.map-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  background: rgba(10, 14, 26, 0.8);
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.legend-sep {
+  color: rgba(255,255,255,0.15);
+  font-size: 14px;
+}
+
+.crowd-low { color: #10b981; }
+.crowd-med { color: #f59e0b; }
+.crowd-high { color: #ef4444; }
+
+/* ─── Location Detail Card (SVG Mode) ─── */
+.location-detail-card {
+  background: var(--card-bg-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin: 8px;
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+  flex-shrink: 0;
+}
+
+.location-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.location-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.location-detail-header h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+}
+
+.location-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.detail-close {
+  margin-left: auto;
+  background: rgba(255,255,255,0.06);
+  border: none;
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.detail-close:hover {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
+}
+
+.location-detail-body {
+  padding: 10px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.detail-row > span:first-child {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.detail-value {
+  color: var(--text-secondary);
+  text-align: right;
+  max-width: 200px;
+  font-size: 11px;
+}
+
+.emergency-phone {
+  color: #ef4444 !important;
+  font-weight: 600;
+}
