@@ -6,6 +6,7 @@ import {
   subscribeToCrowdData, updateCrowdLevel,
   subscribeToAlerts,   sendAlert,   dismissAlert,
   subscribeToIncidents, logIncident, resolveIncident,
+  subscribeToVolunteers, updateVolunteerStatus, assignTaskToVolunteer
 } from '../services/firebaseService.js';
 import { optimizeCrowdDistribution } from '../services/geminiService.js';
 import './AdminDashboard.css';
@@ -383,11 +384,152 @@ function OptimizePanel({ crowdData }) {
 }
 
 
+// ─── Volunteers Control Panel (Admin) ──────────────────
+function VolunteersControlPanel({ volunteers }) {
+  const [taskInput, setTaskInput] = useState({});
+
+  const handleAssign = async (id) => {
+    const task = taskInput[id] || '';
+    if (!task.trim()) return;
+    await assignTaskToVolunteer(id, task.trim());
+    setTaskInput(prev => ({ ...prev, [id]: '' }));
+  };
+
+  const handleClearTask = async (id) => {
+    await assignTaskToVolunteer(id, '');
+  };
+
+  return (
+    <div className="admin-panel">
+      <div className="panel-header">
+        <div className="panel-title-wrap">
+          <h3>🧑‍🤝‍🧑 Volunteer Management</h3>
+          <p className="panel-subtitle">Assign tasks and track volunteer status</p>
+        </div>
+        <span style={{ fontSize: 12, color: '#3b82f6' }}>{volunteers.length} active</span>
+      </div>
+      <div className="crowd-table-wrap">
+        <table className="crowd-table">
+          <thead>
+            <tr>
+              <th>Volunteer</th>
+              <th>Status</th>
+              <th>Current Task</th>
+              <th>Assign New Task</th>
+            </tr>
+          </thead>
+          <tbody>
+            {volunteers.map(v => (
+              <tr key={v.id}>
+                <td>
+                  <strong>{v.name}</strong>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>ID: {v.id}</div>
+                </td>
+                <td>
+                  <span className={`status-badge ${v.status === 'available' ? 'sb-normal' : v.status === 'busy' ? 'sb-moderate' : 'sb-critical'}`}>
+                    {v.status === 'available' ? '🟢 Available' : v.status === 'busy' ? '🟡 Busy' : '🔴 Assigned'}
+                  </span>
+                </td>
+                <td>
+                  {v.assignedTask ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="task-text">{v.assignedTask}</span>
+                      <button className="dismiss-btn" onClick={() => handleClearTask(v.id)} style={{ padding: '2px 6px', fontSize: 10 }}>Clear</button>
+                    </div>
+                  ) : <span style={{ color: '#94a3b8' }}>None</span>}
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input 
+                      type="text" 
+                      className="alert-input" 
+                      placeholder="e.g. Manage Gate 2" 
+                      style={{ padding: '6px', fontSize: 12, minWidth: 150 }}
+                      value={taskInput[v.id] || ''}
+                      onChange={e => setTaskInput({ ...taskInput, [v.id]: e.target.value })}
+                      onKeyDown={e => e.key === 'Enter' && handleAssign(v.id)}
+                    />
+                    <button className="send-btn" onClick={() => handleAssign(v.id)} style={{ padding: '6px 12px', fontSize: 12 }}>Assign</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Volunteer Personal Dashboard ───────────────────────
+function VolunteerDashboardView({ user, volunteers, logout }) {
+  const navigate = useNavigate();
+  // Find current volunteer profile by guessing id from name or just using the first mock for demo if not linked
+  // In a real app user.uid maps to volunteer doc. We'll find by name or fallback to vol-1.
+  const myProfile = volunteers.find(v => v.name.toLowerCase() === user.displayName?.toLowerCase()) || volunteers[0];
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const handleStatusChange = async (e) => {
+    await updateVolunteerStatus(myProfile.id, e.target.value);
+  };
+
+  return (
+    <div className="admin-app">
+      <header className="admin-header">
+        <div className="admin-logo">
+          <span className="admin-logo-icon">🧑‍🤝‍🧑</span>
+          <div className="admin-logo-text">
+            <h1>SenseCrowd Volunteer</h1>
+            <span className="admin-logo-sub">Field Operations Dashboard</span>
+          </div>
+        </div>
+        <div className="admin-header-right">
+          <span className="admin-email-badge">👤 {user.displayName}</span>
+          <button className="admin-logout-btn" onClick={handleLogout}>🚪 Logout</button>
+        </div>
+      </header>
+
+      <main className="admin-main" style={{ maxWidth: 600, margin: '40px auto' }}>
+        <div className="admin-panel">
+          <div className="panel-header">
+            <h3>📋 My Current Assignment</h3>
+          </div>
+          <div className="panel-body" style={{ padding: 20 }}>
+            {myProfile?.assignedTask ? (
+              <div style={{ padding: 20, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, color: '#f87171', fontSize: 18, fontWeight: 600, textAlign: 'center' }}>
+                🚨 {myProfile.assignedTask}
+              </div>
+            ) : (
+              <div style={{ padding: 20, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12, color: '#10b981', fontSize: 16, textAlign: 'center' }}>
+                ✅ You are currently on standby. Await instructions from Control Room.
+              </div>
+            )}
+            
+            <div style={{ marginTop: 30 }}>
+              <label style={{ display: 'block', marginBottom: 8, color: '#94a3b8', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>Update My Status</label>
+              <select className="crowd-select" value={myProfile?.status} onChange={handleStatusChange} style={{ width: '100%', padding: 12, fontSize: 16 }}>
+                <option value="available">🟢 Available (Standby)</option>
+                <option value="busy">🟡 Busy</option>
+                <option value="assigned">🔴 Assigned (Working on task)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 // ─── Main Admin Dashboard ──────────────────────────────
 export default function AdminDashboard() {
   const [crowdData,  setCrowdData]  = useState({});
   const [alerts,     setAlerts]     = useState([]);
   const [incidents,  setIncidents]  = useState([]);
+  const [volunteers, setVolunteers] = useState([]);
   const [activeTab,  setActiveTab]  = useState('crowd');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -396,7 +538,8 @@ export default function AdminDashboard() {
     const u1 = subscribeToCrowdData(setCrowdData);
     const u2 = subscribeToAlerts(setAlerts);
     const u3 = subscribeToIncidents(setIncidents);
-    return () => { u1(); u2(); u3(); };
+    const u4 = subscribeToVolunteers(setVolunteers);
+    return () => { u1(); u2(); u3(); u4(); };
   }, []);
 
   const handleLogout = async () => {
@@ -409,10 +552,16 @@ export default function AdminDashboard() {
   const highCount     = Object.values(crowdData).filter(d => d.level === 'high').length;
   const openIncidents = incidents.filter(i => i.status === 'open').length;
 
+  // Render separate layout for volunteers
+  if (user?.role === 'volunteer') {
+    return <VolunteerDashboardView user={user} volunteers={volunteers} logout={logout} />;
+  }
+
   const tabs = [
     { id: 'crowd',     label: '📊 Crowd Control', badge: highCount > 0 ? highCount : null },
     { id: 'alerts',    label: '📢 Alerts',         badge: alerts.length > 0 ? alerts.length : null },
     { id: 'incidents', label: '🚨 Incidents',      badge: openIncidents > 0 ? openIncidents : null },
+    { id: 'volunteers',label: '🧑‍🤝‍🧑 Volunteers',   badge: volunteers.filter(v => v.status === 'available').length || null },
     { id: 'optimize',  label: '✨ AI Optimizer',   badge: null },
   ];
 
@@ -500,6 +649,9 @@ export default function AdminDashboard() {
             onLog={logIncident}
             onResolve={resolveIncident}
           />
+        )}
+        {activeTab === 'volunteers' && (
+          <VolunteersControlPanel volunteers={volunteers} />
         )}
         {activeTab === 'optimize' && (
           <OptimizePanel crowdData={crowdData} />

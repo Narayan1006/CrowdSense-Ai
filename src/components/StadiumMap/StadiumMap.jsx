@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { STADIUM_CENTER, STADIUM_GATES, FOOD_STALLS, WASHROOMS, SEATING_BLOCKS, HELP_POINTS } from '../../data/stadiumData.js';
+import { subscribeToVolunteers } from '../../services/firebaseService.js';
 import './StadiumMap.css';
 
 const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -68,6 +69,26 @@ function SVGStadiumMap({ crowdData, onLocationClick }) {
     );
   };
 
+  const renderVolunteer = (vol) => {
+    if (!vol.location) return null;
+    const { x, y } = toSVG(vol.location.lat, vol.location.lng);
+    const vColor = vol.status === 'available' ? '#10b981' : vol.status === 'busy' ? '#f59e0b' : '#ef4444';
+    const vEmoji = vol.status === 'available' ? '🙋' : vol.status === 'busy' ? '🏃' : '🧑‍🔧';
+    return (
+      <g
+        key={vol.id}
+        transform={`translate(${x}, ${y})`}
+        className="map-marker"
+        onClick={() => onLocationClick({ type: 'volunteer', ...vol, name: vol.name, description: `Task: ${vol.assignedTask || 'Standby'}` })}
+        style={{ cursor: 'pointer' }}
+      >
+        <circle r="12" fill={vColor} fillOpacity="0.3" stroke={vColor} strokeWidth="2" />
+        <text y="4" textAnchor="middle" fontSize="11">{vEmoji}</text>
+        <text y="22" textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.9)" fontFamily="Inter, sans-serif">{vol.name.split(' ')[0]}</text>
+      </g>
+    );
+  };
+
   return (
     <div className="svg-map-container">
       <div className="svg-map-label">🗺️ Stadium Map (Demo Mode — Add Google Maps API key for live map)</div>
@@ -132,6 +153,9 @@ function SVGStadiumMap({ crowdData, onLocationClick }) {
         {FOOD_STALLS.map(renderMarker)}
         {WASHROOMS.map(renderMarker)}
         {HELP_POINTS.map(renderMarker)}
+        
+        {/* Volunteers */}
+        {crowdData.volunteers && crowdData.volunteers.map(renderVolunteer)}
 
         {/* Tooltip */}
         {tooltip && (() => {
@@ -155,32 +179,33 @@ function SVGStadiumMap({ crowdData, onLocationClick }) {
         })()}
       </svg>
 
-      {/* Legend */}
       <div className="map-legend">
         <div className="legend-item"><span>🚪</span> Gate</div>
         <div className="legend-item"><span>🍕</span> Food</div>
         <div className="legend-item"><span>🚻</span> Washroom</div>
         <div className="legend-item"><span>🆘</span> Help</div>
+        <div className="legend-item"><span>🙋</span> Volunteer</div>
         <div className="legend-sep">|</div>
-        <div className="legend-item crowd-low">● Low</div>
-        <div className="legend-item crowd-med">● Medium</div>
-        <div className="legend-item crowd-high">● High</div>
+        <div className="legend-item crowd-low">● Low/Avail</div>
+        <div className="legend-item crowd-med">● Med/Busy</div>
+        <div className="legend-item crowd-high">● High/Task</div>
       </div>
     </div>
   );
 }
 
 // Create custom marker icon SVG as a data URL
-function createMarkerIcon(type, crowdLevel) {
+function createMarkerIcon(type, crowdLevel, overrideColor, overrideEmoji) {
   const typeConfig = {
     gate:     { bg: '#1d4ed8', border: '#3b82f6', label: 'G', emoji: '🚪', size: 36 },
     food:     { bg: '#92400e', border: '#f59e0b', label: 'F', emoji: '🍕', size: 30 },
     washroom: { bg: '#164e63', border: '#06b6d4', label: 'W', emoji: '🚻', size: 30 },
     help:     { bg: '#7f1d1d', border: '#ef4444', label: 'H', emoji: '🆘', size: 32 },
+    volunteer: { bg: overrideColor || '#10b981', border: '#fff', label: 'V', emoji: overrideEmoji || '🙋', size: 28 },
   };
   const cfg = typeConfig[type] || typeConfig.gate;
   const crowdColor = LEVEL_COLORS[crowdLevel] || 'transparent';
-  const showCrowd = crowdLevel && crowdLevel !== 'unknown';
+  const showCrowd = crowdLevel && crowdLevel !== 'unknown' && type !== 'volunteer';
   const s = cfg.size;
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s + 8}" viewBox="0 0 ${s} ${s + 8}">
@@ -236,7 +261,7 @@ function GoogleMapsView({ crowdData, onLocationClick }) {
     googleMapRef.current = map;
 
     const allLocs = [...STADIUM_GATES, ...FOOD_STALLS, ...WASHROOMS, ...HELP_POINTS];
-    markersRef.current = allLocs.map(loc => {
+    const newMarkers = allLocs.map(loc => {
       const crowdLevel = crowdData[loc.id]?.level;
       const iconUrl = createMarkerIcon(loc.type, crowdLevel);
       const s = loc.type === 'gate' ? 36 : loc.type === 'help' ? 32 : 30;
@@ -254,17 +279,23 @@ function GoogleMapsView({ crowdData, onLocationClick }) {
         setSelectedLocation(loc);
         onLocationClick(loc);
       });
-      return { marker, loc };
+      return { marker, loc, isVolunteer: false };
     });
+
+    markersRef.current = newMarkers;
 
     // Close info card when clicking map background
     map.addListener('click', () => setSelectedLocation(null));
   }, [isLoaded]);
 
-  // Update marker icons when crowd data changes
+  // Update marker icons when crowd data changes AND render volunteers dynamically
   useEffect(() => {
     if (!isLoaded || !window.google) return;
-    markersRef.current.forEach(({ marker, loc }) => {
+    
+    // Update base locations
+    markersRef.current.forEach(item => {
+      if (item.isVolunteer) return;
+      const { marker, loc } = item;
       const crowdLevel = crowdData[loc.id]?.level;
       const iconUrl = createMarkerIcon(loc.type, crowdLevel);
       const s = loc.type === 'gate' ? 36 : loc.type === 'help' ? 32 : 30;
@@ -274,6 +305,38 @@ function GoogleMapsView({ crowdData, onLocationClick }) {
         anchor: new window.google.maps.Point(s / 2, s + 8),
       });
     });
+
+    // Handle dynamic volunteers
+    const existingVols = markersRef.current.filter(m => m.isVolunteer);
+    
+    if (crowdData.volunteers) {
+      crowdData.volunteers.forEach(vol => {
+        if (!vol.location) return;
+        const vColor = vol.status === 'available' ? '#10b981' : vol.status === 'busy' ? '#f59e0b' : '#ef4444';
+        const svgUri = createMarkerIcon('volunteer', null, vColor, '🙋');
+
+        const existing = existingVols.find(m => m.loc.id === vol.id);
+        if (existing) {
+          existing.marker.setIcon({ url: svgUri, scaledSize: new window.google.maps.Size(28, 36) });
+          // Optionally update position if tracking moves
+          existing.marker.setPosition(vol.location);
+        } else {
+          const marker = new window.google.maps.Marker({
+            position: vol.location,
+            map: googleMapRef.current,
+            title: vol.name,
+            icon: { url: svgUri, scaledSize: new window.google.maps.Size(28, 36) },
+          });
+          const volLocDef = { type: 'volunteer', id: vol.id, name: vol.name, description: `Task: ${vol.assignedTask || 'Standby'}` };
+          marker.addListener('click', () => {
+            setSelectedLocation(volLocDef);
+            onLocationClick(volLocDef);
+          });
+          markersRef.current.push({ marker, loc: volLocDef, isVolunteer: true });
+        }
+      });
+    }
+
   }, [crowdData, isLoaded]);
 
   // Switch map type
@@ -317,7 +380,8 @@ function GoogleMapsView({ crowdData, onLocationClick }) {
             <span className="map-info-icon">
               {selectedLocation.type === 'gate' ? '🚪' :
                selectedLocation.type === 'food' ? '🍕' :
-               selectedLocation.type === 'washroom' ? '🚻' : '🆘'}
+               selectedLocation.type === 'washroom' ? '🚻' :
+               selectedLocation.type === 'volunteer' ? '🙋' : '🆘'}
             </span>
             <div>
               <h4 className="map-info-name">{selectedLocation.name}</h4>
@@ -383,10 +447,19 @@ function GoogleMapsView({ crowdData, onLocationClick }) {
 // Main StadiumMap component
 export default function StadiumMap({ crowdData }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [volunteers, setVolunteers] = useState([]);
+
+  useEffect(() => {
+    const unsub = subscribeToVolunteers(setVolunteers);
+    return () => unsub();
+  }, []);
 
   const handleLocationClick = useCallback((loc) => {
     setSelectedLocation(loc);
   }, []);
+
+  // inject volunteers into crowdData object temporarily to pass into views easily
+  const extendedData = { ...crowdData, volunteers };
 
   return (
     <div className="stadium-map-panel">
@@ -407,10 +480,10 @@ export default function StadiumMap({ crowdData }) {
 
       <div className="map-content">
         {hasMapKey ? (
-          <GoogleMapsView crowdData={crowdData} onLocationClick={handleLocationClick} />
+          <GoogleMapsView crowdData={extendedData} onLocationClick={handleLocationClick} />
         ) : (
           <>
-            <SVGStadiumMap crowdData={crowdData} onLocationClick={handleLocationClick} />
+            <SVGStadiumMap crowdData={extendedData} onLocationClick={handleLocationClick} />
             {/* Location detail card for SVG mode */}
             {selectedLocation && (
               <div className="location-detail-card">
@@ -418,7 +491,8 @@ export default function StadiumMap({ crowdData }) {
                   <div className="location-icon">
                     {selectedLocation.type === 'gate' ? '🚪' :
                      selectedLocation.type === 'food' ? '🍕' :
-                     selectedLocation.type === 'washroom' ? '🚻' : '🆘'}
+                     selectedLocation.type === 'washroom' ? '🚻' : 
+                     selectedLocation.type === 'volunteer' ? '🙋' : '🆘'}
                   </div>
                   <div>
                     <h4>{selectedLocation.name}</h4>

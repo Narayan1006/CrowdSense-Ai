@@ -13,6 +13,7 @@ import '../App.css';
 
 export default function UserApp() {
   const [showEmergency, setShowEmergency] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState('chat'); // 'chat' | 'map'
   const { crowdData, isLoading, lastUpdated } = useCrowdData();
   const alerts = useAlerts();
   const { user, logout } = useAuth();
@@ -120,12 +121,28 @@ export default function UserApp() {
         <SmartSuggestions crowdData={crowdData} />
       </div>
 
+      {/* ─── Mobile Tab Toggle ─── */}
+      <div className="mobile-tabs">
+        <button 
+          className={`mobile-tab ${activeMobileTab === 'chat' ? 'active' : ''}`}
+          onClick={() => setActiveMobileTab('chat')}
+        >
+          💬 AI Chat
+        </button>
+        <button 
+          className={`mobile-tab ${activeMobileTab === 'map' ? 'active' : ''}`}
+          onClick={() => setActiveMobileTab('map')}
+        >
+          🗺️ Stadium Map
+        </button>
+      </div>
+
       {/* ─── Main Dashboard ─── */}
       <main className="dashboard">
-        <div className="panel-left">
+        <div className={`panel-left ${activeMobileTab === 'chat' ? 'mobile-active' : ''}`}>
           <ChatPanel crowdData={crowdData} userData={user} />
         </div>
-        <div className="panel-right">
+        <div className={`panel-right ${activeMobileTab === 'map' ? 'mobile-active' : ''}`}>
           <StadiumMap crowdData={crowdData} />
         </div>
       </main>

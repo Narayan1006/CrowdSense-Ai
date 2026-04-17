@@ -17,9 +17,14 @@ if (hasGemini) {
 function buildSystemPrompt(crowdData, userData) {
   const crowdSummary = crowdData
     ? Object.entries(crowdData)
+        .filter(([key]) => key !== 'volunteers')
         .map(([key, val]) => `  - ${val.name}: ${val.level?.toUpperCase() || 'UNKNOWN'} (Prediction: ${val.prediction?.toUpperCase() || 'UNKNOWN'})`)
         .join('\n')
     : '  - Data unavailable (using estimates)';
+
+  const volContext = (crowdData && crowdData.volunteers && crowdData.volunteers.length > 0)
+    ? `\nAVAILABLE VOLUNTEERS:\n${crowdData.volunteers.map(v => `  - ${v.name} (Status: ${v.status}, Task: ${v.assignedTask || 'None'})`).join('\n')}`
+    : '';
 
   const userContext = userData 
     ? `\nUSER CONTEXT:\n- Name: ${userData.name || 'Visitor'}\n- Block: ${userData.block || 'Unknown'}\n- Recommended Gate: ${userData.gate || 'Unknown'}\n*Personalize your reasoning using this location data if relevant.*`
@@ -37,14 +42,16 @@ STADIUM LAYOUT:
 
 REAL-TIME CROWD LEVELS:
 ${crowdSummary}
+${volContext}
 ${userContext}
 
 RESPONSE STYLE RULES:
 1. Be concise and practical (no long paragraphs).
 2. Always give a decision, not just information.
 3. Prioritize user safety and convenience (1. LOW crowd, 2. Closest distance).
-4. For emergencies, give immediate actionable steps and contact numbers.
-5. NO vague answers, NO "I think" or "maybe".
+4. If a location is highly crowded, proactively mention if a volunteer is nearby or suggest asking an available volunteer for help.
+5. For emergencies, give immediate actionable steps, contact numbers, and mention any available standby volunteers.
+6. NO vague answers, NO "I think" or "maybe".
 
 MANDATORY RESPONSE FORMAT:
 You MUST respond strictly in the following format for EVERY query:

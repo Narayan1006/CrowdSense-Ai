@@ -1,6 +1,6 @@
 // useCrowdData hook — subscribes to real-time crowd data (Firebase or simulated)
 import { useState, useEffect } from 'react';
-import { subscribeToCrowdData } from '../services/firebaseService.js';
+import { subscribeToCrowdData, subscribeToVolunteers } from '../services/firebaseService.js';
 
 export function useCrowdData() {
   const [crowdData, setCrowdData] = useState({});
@@ -8,10 +8,17 @@ export function useCrowdData() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
+    let currentVolunteers = [];
+    const unsubVols = subscribeToVolunteers(vols => {
+      currentVolunteers = vols;
+      setCrowdData(prev => ({ ...prev, volunteers: vols }));
+    });
+
     const unsubscribe = subscribeToCrowdData(data => {
       // Simulate predictions based on current level
-      const dataWithPredictions = {};
+      const dataWithPredictions = { volunteers: currentVolunteers };
       for (const [key, value] of Object.entries(data)) {
+        if (key === 'volunteers') continue;
         let predictedLevel = value.level;
         if (value.level === 'medium') predictedLevel = 'high';
         else if (value.level === 'high') predictedLevel = 'high';
@@ -27,7 +34,7 @@ export function useCrowdData() {
       setIsLoading(false);
       setLastUpdated(new Date());
     });
-    return () => unsubscribe();
+    return () => { unsubscribe(); unsubVols(); };
   }, []);
 
   const getCrowdLevel = id => crowdData[id]?.level || 'unknown';

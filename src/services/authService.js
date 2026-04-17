@@ -44,13 +44,15 @@ export async function loginAdmin(email, password) {
     const { getAuth, signInWithEmailAndPassword } = await import('firebase/auth');
     const auth = getAuth(app);
     const cred = await signInWithEmailAndPassword(auth, email, password);
+    const role = cred.user.email?.includes('volunteer') ? 'volunteer' : 'control_room';
+    
     return {
       success: true,
       user: {
-        role: 'admin',
+        role: role,
         email: cred.user.email,
         uid: cred.user.uid,
-        displayName: cred.user.displayName || 'Admin',
+        displayName: cred.user.displayName || (role === 'volunteer' ? 'Volunteer' : 'Admin'),
       },
     };
   } catch (e) {
@@ -84,7 +86,15 @@ export async function getFirebaseAuthUser() {
   if (!app) return null;
   try {
     const { getAuth } = await import('firebase/auth');
-    return getAuth(app).currentUser;
+    const authUser = getAuth(app).currentUser;
+    if (!authUser) return null;
+    const role = authUser.email?.includes('volunteer') ? 'volunteer' : 'control_room';
+    return {
+      uid: authUser.uid,
+      email: authUser.email,
+      role: role,
+      displayName: authUser.displayName || (role === 'volunteer' ? 'Volunteer' : 'Admin')
+    };
   } catch { return null; }
 }
 
@@ -95,7 +105,19 @@ export function onFirebaseAuthChange(callback) {
     if (!app) return;
     try {
       const { getAuth, onAuthStateChanged } = await import('firebase/auth');
-      unsubscribe = onAuthStateChanged(getAuth(app), callback);
+      unsubscribe = onAuthStateChanged(getAuth(app), (user) => {
+        if (user) {
+          const role = user.email?.includes('volunteer') ? 'volunteer' : 'control_room';
+          callback({
+            uid: user.uid,
+            email: user.email,
+            role: role,
+            displayName: user.displayName || (role === 'volunteer' ? 'Volunteer' : 'Admin')
+          });
+        } else {
+          callback(null);
+        }
+      });
     } catch { /* ignore */ }
   });
   return () => unsubscribe();

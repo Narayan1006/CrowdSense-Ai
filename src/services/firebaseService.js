@@ -77,9 +77,18 @@ let alertSubscribers  = [];
 let inMemoryIncidents = [];
 let incidentSubscribers = [];
 
+const INITIAL_VOLUNTEERS = [
+  { id: 'vol-1', name: 'Rahul R', location: { lat: 23.0911, lng: 72.5971 }, status: 'available', assignedTask: '' },
+  { id: 'vol-2', name: 'Neha S', location: { lat: 23.0932, lng: 72.5958 }, status: 'busy', assignedTask: '' },
+  { id: 'vol-3', name: 'Amit K', location: { lat: 23.0925, lng: 72.5980 }, status: 'available', assignedTask: '' }
+];
+let inMemoryVolunteers = [...INITIAL_VOLUNTEERS];
+let volunteerSubscribers = [];
+
 const notifyCrowd     = () => { const s = { ...inMemoryCrowd }; crowdSubscribers.forEach(cb => cb(s)); };
 const notifyAlerts    = () => { const s = [...inMemoryAlerts];   alertSubscribers.forEach(cb => cb(s)); };
 const notifyIncidents = () => { const s = [...inMemoryIncidents]; incidentSubscribers.forEach(cb => cb(s)); };
+const notifyVolunteers = () => { const s = [...inMemoryVolunteers]; volunteerSubscribers.forEach(cb => cb(s)); };
 
 // ─── CROWD DATA ────────────────────────────────────────────────────────────
 export function getCrowdSnapshot() { return { ...inMemoryCrowd }; }
@@ -247,6 +256,58 @@ export async function resolveIncident(id) {
   notifyIncidents();
 }
 
+// ─── VOLUNTEERS ────────────────────────────────────────────────────────────
+export function subscribeToVolunteers(callback) {
+  callback([...inMemoryVolunteers]);
+  volunteerSubscribers.push(callback);
+
+  let unsubFS = () => {};
+  if (useFirebase && db) {
+    import('firebase/firestore').then(({ collection, onSnapshot }) => {
+      unsubFS = onSnapshot(collection(db, 'volunteers'), snap => {
+        const data = [];
+        snap.forEach(d => data.push({ id: d.id, ...d.data() }));
+        callback(data);
+      }, err => console.warn('⚠️ Firestore volunteers listener error:', err.message));
+      seedFirestoreVolunteers();
+    });
+  }
+  return () => {
+    unsubFS();
+    volunteerSubscribers = volunteerSubscribers.filter(cb => cb !== callback);
+  };
+}
+
+export async function updateVolunteerStatus(id, status) {
+  if (useFirebase && db) {
+    try {
+      const { doc, collection, updateDoc } = await import('firebase/firestore');
+      await updateDoc(doc(collection(db, 'volunteers'), id), { status });
+      return;
+    } catch (e) { console.warn('⚠️ Firestore updateVolunteerStatus failed:', e.message); }
+  }
+  inMemoryVolunteers = inMemoryVolunteers.map(v => v.id === id ? { ...v, status } : v);
+  notifyVolunteers();
+}
+
+export async function assignTaskToVolunteer(id, assignedTask) {
+  if (useFirebase && db) {
+    try {
+      const { doc, collection, updateDoc } = await import('firebase/firestore');
+      // If assigning a task, auto-set to assigned. If clearing, available.
+      const status = assignedTask ? 'assigned' : 'available';
+      await updateDoc(doc(collection(db, 'volunteers'), id), { assignedTask, status });
+      return;
+    } catch (e) { console.warn('⚠️ Firestore assignTaskToVolunteer failed:', e.message); }
+  }
+  inMemoryVolunteers = inMemoryVolunteers.map(v => 
+    v.id === id 
+      ? { ...v, assignedTask, status: assignedTask ? 'assigned' : 'available' } 
+      : v
+  );
+  notifyVolunteers();
+}
+
 // ─── Firestore Internal Helpers ────────────────────────────────────────────
 async function seedFirestoreCrowd() {
   if (!useFirebase || !db) return;
@@ -259,6 +320,19 @@ async function seedFirestoreCrowd() {
       await setDoc(doc(collection(db, 'crowdData'), id), data);
     }
     console.log('✅ Firestore seeded with initial crowd data');
+  } catch (e) { console.error('Seed error:', e); }
+}
+
+async function seedFirestoreVolunteers() {
+  if (!useFirebase || !db) return;
+  try {
+    const { collection, doc, setDoc, getDocs } = await import('firebase/firestore');
+    const snap = await getDocs(collection(db, 'volunteers'));
+    if (snap.size > 0) return;
+    for (const v of INITIAL_VOLUNTEERS) {
+      await setDoc(doc(collection(db, 'volunteers'), v.id), v);
+    }
+    console.log('✅ Firestore seeded with mock volunteers');
   } catch (e) { console.error('Seed error:', e); }
 }
 
